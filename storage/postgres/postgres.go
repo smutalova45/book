@@ -3,8 +3,9 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	_ "github.com/golang-migrate/migrate"
+	"github.com/golang-migrate/migrate"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"main.go/config"
 	"main.go/storage"
@@ -37,27 +38,27 @@ func New(ctx context.Context, cfg config.Config) (storage.IStorage, error) {
 	}
 
 	// //migration
-	// m, err := migrate.New("file://migrations/postgres/", url)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	m, err := migrate.New("file://migrations/postgres/", url)
+	if err != nil {
+		return nil, err
+	}
 
-	// if err = m.Up(); err != nil {
-	// 	if !strings.Contains(err.Error(), "no change") {
-	// 		version, dirty, err := m.Version()
-	// 		if err != nil {
-	// 			return nil, err
-	// 		}
+	if err = m.Up(); err != nil {
+		if !strings.Contains(err.Error(), "no change") {
+			version, dirty, err := m.Version()
+			if err != nil {
+				return nil, err
+			}
 
-	// 		if dirty {
-	// 			version--
-	// 			if err = m.Force(int(version)); err != nil {
-	// 				return nil, err
-	// 			}
-	// 		}
-	// 		return nil, err
-	// 	}
-	// }
+			if dirty {
+				version--
+				if err = m.Force(int(version)); err != nil {
+					return nil, err
+				}
+			}
+			return nil, err
+		}
+	}
 
 	return Store{
 		pool: pool,
